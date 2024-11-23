@@ -30,24 +30,19 @@ const Footer = () => {
                   alt="AWS Community"
                   className="h-6"
                 />
-                <span>AWS Community Vadodara</span>
+                <span>AWS Community </span>
               </div>
             </div>
           </div>
-          {/* <div>
-            <h3 className="text-xl font-bold mb-4">Connect With Us</h3>
-            <div className="flex space-x-4">
-              <a href="#" className="hover:text-blue-400">
-                <Twitter className="h-6 w-6" />
-              </a>
-              <a href="#" className="hover:text-blue-600">
-                <Linkedin className="h-6 w-6" />
-              </a>
-              <a href="#" className="hover:text-gray-400">
-                <Github className="h-6 w-6" />
-              </a>
-            </div>
-          </div> */}
+          <div className="flex justify-between">
+          <div>
+            <h3 className="text-xl font-bold mb-4">Contact Us</h3>
+            <p>Google Headquarters</p>
+            <p>1600 Amphitheatre Parkway</p>
+            <p>Mountain View, CA 94043</p>
+            <p>United States</p>
+          </div>
+        </div>
         </div>
         <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
           <p>&copy; {new Date().getFullYear()} AI Academy. All rights reserved.</p>
