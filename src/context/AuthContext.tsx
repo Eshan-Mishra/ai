@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('https://ai-seven-alpha.vercel.app/login', {
+      const response = await fetch('http://localhost:3000/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,13 +23,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Login failed: ${errorText}`);
-        throw new Error(`Login failed: ${errorText}`);
+        throw new Error('Login failed');
       }
 
       const data = await response.json();
-      console.log('Login successful:', data);
+      localStorage.setItem('token', data.token);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Login error:', error);
@@ -39,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('https://ai-seven-alpha.vercel.app/register', {
+      const response = await fetch('http://localhost:3000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,10 +46,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Registration failed: ${errorText}`);
+        throw new Error('Registration failed');
       }
 
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Registration error:', error);
@@ -60,6 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     setIsAuthenticated(false);
   };
 
