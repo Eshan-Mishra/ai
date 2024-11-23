@@ -28,7 +28,7 @@ const Login = () => {
           <LogIn className="h-12 w-12 text-blue-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          Sign in to your account v1
         </h2>
       </div>
 
