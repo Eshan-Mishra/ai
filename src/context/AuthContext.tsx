@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch(import.meta.env.VITE_REACT_APP_LOGIN_URI, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,7 +23,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        if (response.status === 401) {
+          throw new Error('Unauthorized: Incorrect email or password');
+        } else {
+          throw new Error('Login failed');
+        }
       }
 
       const data = await response.json();
@@ -37,7 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('http://localhost:3000/api/register', {
+      const response = await fetch(import.meta.env.VITE_REACT_APP_REGISTER_URI, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

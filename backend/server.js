@@ -1,29 +1,33 @@
 import express from 'express';
 import cors from 'cors';
-import { createObjectCsvWriter } from 'csv-writer';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { createObjectCsvWriter } from 'csv-writer';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import fs from 'fs';
 
+// Define paths and constants
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const app = express();
 const PORT = 3000;
+const JWT_SECRET = 'your-secret-key';
+const USERS_CSV_PATH = join(__dirname, 'users.csv');
+const CODES_CSV_PATH = join(__dirname, 'random_codes_updated.csv');
 
-// Middleware
+// Initialize Express app
+const app = express();
+
+// Middleware for CORS and JSON body parsing
 app.use(cors());
 app.use(express.json());
 
-// Ensure users.csv exists
-const csvFilePath = join(__dirname, 'users.csv');
-if (!fs.existsSync(csvFilePath)) {
-  fs.writeFileSync(csvFilePath, 'email,password,registrationNo\n');
+// Ensure the users.csv file exists
+if (!fs.existsSync(USERS_CSV_PATH)) {
+  fs.writeFileSync(USERS_CSV_PATH, 'email,password,registrationNo\n');
 }
 
-// CSV Writer setup
+// Setup CSV writer for user data
 const csvWriter = createObjectCsvWriter({
-  path: csvFilePath,
+  path: USERS_CSV_PATH,
   header: [
     { id: 'email', title: 'email' },
     { id: 'password', title: 'password' },
@@ -32,16 +36,12 @@ const csvWriter = createObjectCsvWriter({
   append: true
 });
 
-// JWT secret
-const JWT_SECRET = 'your-secret-key';
-
 // Helper function to read users from CSV
 const getUsers = () => {
   try {
-    const content = fs.readFileSync(csvFilePath, 'utf-8');
-    const lines = content.split('\n').slice(1); // Skip header
-    return lines
-      .filter(line => line.trim())
+    const content = fs.readFileSync(USERS_CSV_PATH, 'utf-8');
+    return content.split('\n').slice(1) // Skip header
+      .filter(line => line.trim()) // Filter out empty lines
       .map(line => {
         const [email, password, registrationNo] = line.split(',');
         return { email, password, registrationNo };
@@ -52,83 +52,81 @@ const getUsers = () => {
   }
 };
 
-// Helper function to check registration code
-const checkRegistrationCode = (registrationNo) => {
-  const filePath = join(__dirname, 'random_codes_updated.csv');
-  const data = fs.readFileSync(filePath, 'utf8');
-  const lines = data.split('\n');
-  return lines.some(line => line.split(',')[0] === registrationNo);
+// Helper function to validate registration code
+const isValidRegistrationCode = (registrationNo) => {
+  try {
+    const content = fs.readFileSync(CODES_CSV_PATH, 'utf-8');
+    const codes = content.split('\n');
+    return codes.some(code => code.split(',')[0] === registrationNo);
+  } catch (error) {
+    console.error('Error reading registration codes:', error);
+    return false;
+  }
 };
 
 // Register endpoint
 app.post('/api/register', async (req, res) => {
-  try {
-    const { email, password, registrationNo } = req.body;
-    console.log('Received values:', req.body);
+  const { email, password, registrationNo } = req.body;
 
-    if (!checkRegistrationCode(registrationNo)) {
-      console.log(`Invalid registration code for email: ${email}, registrationNo: ${registrationNo}`);
-      return res.status(400).json({ error: `Invalid registration code for email: ${email}, registrationNo: ${registrationNo}` });
+  try {
+    console.log('Register request:', req.body);
+
+    // Validate registration code
+    if (!isValidRegistrationCode(registrationNo)) {
+      return res.status(400).json({ error: 'Invalid registration code' });
     }
 
-    // Check if user exists
+    // Check if user already exists
     const users = getUsers();
     if (users.some(user => user.email === email)) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
+    // Hash the password and save the user
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Save to CSV
-    await csvWriter.writeRecords([
-      { email, password: hashedPassword, registrationNo }
-    ]);
+    await csvWriter.writeRecords([{ email, password: hashedPassword, registrationNo }]);
 
     res.status(201).json({ message: 'Registration successful' });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Error during registration:', error);
     res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 // Login endpoint
 app.post('/api/login', async (req, res) => {
-  try {
-    const { email, password, registrationNo } = req.body;
-    console.log('Received values:', req.body);
+  const { email, password, registrationNo } = req.body;
 
-    if (!checkRegistrationCode(registrationNo)) {
-      console.log(`Invalid registration code for email: ${email}, registrationNo: ${registrationNo}`);
-      return res.status(400).json({ error: `Invalid registration code for email: ${email}, registrationNo: ${registrationNo}` });
+  try {
+    console.log('Login request:', req.body);
+
+    // Validate registration code
+    if (!isValidRegistrationCode(registrationNo)) {
+      return res.status(400).json({ error: 'Invalid registration code' });
     }
 
     // Find user
     const users = getUsers();
-    const user = users.find(u => u.email === email);
-
+    const user = users.find(u => u.email === email && u.registrationNo === registrationNo);
     if (!user) {
-      console.log(`User not found for email: ${email}`);
-      console.log('Current users:', users);
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid email or registration number' });
     }
 
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      console.log(`Invalid password for email: ${email}`);
-      return res.status(401).json({ error: 'Invalid credentials' });
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
-    console.log(`Login successful for email: ${email}`);
-    res.json({ message: 'Login successful' });
+    console.log('Login successful:', email);
+    res.json({ message: 'Login successful', redirect: '/course-section' });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Error during login:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
