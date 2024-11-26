@@ -2,14 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import { createObjectCsvWriter } from 'csv-writer';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -31,9 +33,6 @@ const csvWriter = createObjectCsvWriter({
   ],
   append: true
 });
-
-// JWT secret
-const JWT_SECRET = 'your-secret-key';
 
 // Helper function to read users from CSV
 const getUsers = () => {

@@ -9,12 +9,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
+
+console.log('API_URL:', API_URL); // Debugging line
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const login = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('https://ai-seven-alpha.vercel.app/api/login', {
+      const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,7 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (email: string, password: string, registrationNo: string) => {
     try {
-      const response = await fetch('https://ai-seven-alpha.vercel.app/api/register', {
+      const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
